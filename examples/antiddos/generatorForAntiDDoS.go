@@ -12,6 +12,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -66,19 +67,42 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	exampleDoneEvent = sync.NewCond(&sync.Mutex{})
 
 	// Create first packet flow
-	outputFlow := flow.SetGenerator(generatePacket, speed, nil)
-	flow.SetSender(outputFlow, outPort)
-	inputFlow := flow.SetReceiver(inPort)
-	flow.SetHandler(inputFlow, checkInputFlow, nil)
-	flow.SetStopper(inputFlow)
+	outputFlow, err := flow.SetGenerator(generatePacket, speed, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(outputFlow, outPort)
+	if err != nil {
+		log.Fatal(err)
+	}
+	inputFlow, err := flow.SetReceiver(inPort)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(inputFlow, checkInputFlow, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(inputFlow)
+	if err != nil {
+		log.Fatal(err)
+	}
 	go randomizeSize()
 	// Start pipeline
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// Wait for enough packets to arrive
 	exampleDoneEvent.L.Lock()

@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"math/rand"
@@ -62,9 +63,17 @@ func main() {
 	}
 	// Create packet flow
 	outputFlow := flow.SetGenerator(generator, 0, nil)
-	flow.SetWriter(outputFlow, outFile)
+	err = flow.SetWriter(outputFlow, outFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Start pipeline
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// Wait for enough packets to arrive
 	testDoneEvent.L.Lock()

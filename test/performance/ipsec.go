@@ -1,20 +1,22 @@
 // Only IPv4, Only tunnel, Only ESP, Only AES-128-CBC
 package main
 
-import "github.com/intel-go/yanff/common"
-import "github.com/intel-go/yanff/flow"
-import "github.com/intel-go/yanff/packet"
+import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/hmac"
+	"crypto/sha1"
+	"flag"
+	"hash"
+	"log"
+	"math"
+	"unsafe"
 
-import "unsafe"
-import "math"
-import "bytes"
-
-import "crypto/aes"
-import "crypto/cipher"
-import "crypto/hmac"
-import "crypto/sha1"
-import "hash"
-import "flag"
+	"github.com/intel-go/yanff/common"
+	"github.com/intel-go/yanff/flow"
+	"github.com/intel-go/yanff/packet"
+)
 
 func main() {
 	var noscheduler bool
@@ -25,14 +27,32 @@ func main() {
 		CPUList:          "0-31",
 		DisableScheduler: noscheduler,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	input := flow.SetReceiver(0)
-	flow.SetHandler(input, encapsulation, *(new(context)))
-	flow.SetHandler(input, decapsulation, *(new(context)))
-	flow.SetSender(input, 1)
+	input, err := flow.SetReceiver(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(input, encapsulation, *(new(context)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(input, decapsulation, *(new(context)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(input, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type context struct {

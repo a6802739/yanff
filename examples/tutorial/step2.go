@@ -1,16 +1,35 @@
 package main
 
-import "github.com/intel-go/yanff/flow"
+import (
+	"log"
+
+	"github.com/intel-go/yanff/flow"
+)
 
 func main() {
 	config := flow.Config{}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	initCommonState()
 
-	firstFlow := flow.SetReceiver(0)
-	flow.SetHandler(firstFlow, modifyPacket[0], nil)
-	flow.SetSender(firstFlow, 0)
+	firstFlow, err := flow.SetReceiver(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(firstFlow, modifyPacket[0], nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(firstFlow, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

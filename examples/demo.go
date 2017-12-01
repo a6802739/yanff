@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"time"
 
 	"github.com/intel-go/yanff/flow"
@@ -33,27 +34,54 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start regular updating forwarding rules
-	l2Rules = packet.GetL2ACLFromJSON("demoL2_ACL.json")
-	l3Rules = packet.GetL3ACLFromJSON("demoL3_ACL.json")
+	l2Rules, err = packet.GetL2ACLFromJSON("demoL2_ACL.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	l3Rules, err = packet.GetL3ACLFromJSON("demoL3_ACL.json")
+	if err != nil {
+		log.Fatal(err)
+	}
 	go updateSeparateRules()
 
 	// Receive packets from zero port. One queue will be added automatically.
-	firstFlow := flow.SetReceiver(uint8(inport))
+	firstFlow, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Separate packets for additional flow due to some rules
-	secondFlow := flow.SetSeparator(firstFlow, l3Separator, nil)
+	secondFlow, err := flow.SetSeparator(firstFlow, l3Separator, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Handle second flow via some heavy function
-	flow.SetHandler(firstFlow, heavyFunc, nil)
+	err = flow.SetHandler(firstFlow, heavyFunc, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send both flows each one to one port. Queues will be added automatically.
-	flow.SetSender(firstFlow, uint8(outport1))
-	flow.SetSender(secondFlow, uint8(outport2))
+	err = flow.SetSender(firstFlow, uint8(outport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(secondFlow, uint8(outport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func l3Separator(currentPacket *packet.Packet, context flow.UserContext) bool {
@@ -71,7 +99,14 @@ func heavyFunc(currentPacket *packet.Packet, context flow.UserContext) {
 func updateSeparateRules() {
 	for {
 		time.Sleep(time.Second * 5)
-		l2Rules = packet.GetL2ACLFromJSON("demoL2_ACL.json")
-		l3Rules = packet.GetL3ACLFromJSON("demoL3_ACL.json")
+		var err error
+		l2Rules, err = packet.GetL2ACLFromJSON("demoL2_ACL.json")
+		if err != nil {
+			log.Fatal(err)
+		}
+		l3Rules, err = packet.GetL3ACLFromJSON("demoL3_ACL.json")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

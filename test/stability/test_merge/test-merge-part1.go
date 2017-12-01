@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -78,7 +79,10 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	stabilityCommon.InitCommonState(*configFile, *target)
 	fixMACAddrs1 = stabilityCommon.ModifyPacket[outport1].(func(*packet.Packet, flow.UserContext))
 	fixMACAddrs2 = stabilityCommon.ModifyPacket[outport2].(func(*packet.Packet, flow.UserContext))
@@ -86,21 +90,47 @@ func main() {
 	var m sync.Mutex
 	testDoneEvent = sync.NewCond(&m)
 
-	firstFlow := flow.SetGenerator(generatePacketGroup1, speed, nil)
-	flow.SetSender(firstFlow, uint8(outport1))
+	firstFlow, err := flow.SetGenerator(generatePacketGroup1, speed, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(firstFlow, uint8(outport1))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create second packet flow
-	secondFlow := flow.SetGenerator(generatePacketGroup2, speed, nil)
-	flow.SetSender(secondFlow, uint8(outport2))
+	secondFlow, err := flow.SetGenerator(generatePacketGroup2, speed, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(secondFlow, uint8(outport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create receiving flow and set a checking function for it
-	inputFlow := flow.SetReceiver(uint8(inport))
+	inputFlow, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SetHandler(inputFlow, checkPackets, nil)
-	flow.SetStopper(inputFlow)
+	err = flow.SetHandler(inputFlow, checkPackets, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(inputFlow)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start pipeline
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	progStart = time.Now()
 
 	// Wait for enough packets to arrive
@@ -142,10 +172,10 @@ func main() {
 
 func generatePacketGroup1(pkt *packet.Packet, context flow.UserContext) {
 	if pkt == nil {
-		panic("Failed to create new packet")
+		log.Fatal("Failed to create new packet")
 	}
 	if packet.InitEmptyIPv4UDPPacket(pkt, payloadSize) == false {
-		panic("Failed to init empty packet")
+		log.Fatal("Failed to init empty packet")
 	}
 	ipv4 := pkt.GetIPv4()
 	udp := pkt.GetUDPForIPv4()
@@ -165,10 +195,10 @@ func generatePacketGroup1(pkt *packet.Packet, context flow.UserContext) {
 
 func generatePacketGroup2(pkt *packet.Packet, context flow.UserContext) {
 	if pkt == nil {
-		panic("Failed to create new packet")
+		log.Fatal("Failed to create new packet")
 	}
 	if packet.InitEmptyIPv4UDPPacket(pkt, payloadSize) == false {
-		panic("Failed to init empty packet")
+		log.Fatal("Failed to init empty packet")
 	}
 	ipv4 := pkt.GetIPv4()
 	udp := pkt.GetUDPForIPv4()

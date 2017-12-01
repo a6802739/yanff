@@ -4,9 +4,12 @@
 
 package main
 
-import "github.com/intel-go/yanff/flow"
+import (
+	"flag"
+	"log"
 
-import "flag"
+	"github.com/intel-go/yanff/flow"
+)
 
 var inport, outport uint
 var cores string
@@ -23,12 +26,24 @@ func main() {
 	config := flow.Config{
 		CPUList: cores,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from input port. One queue will be added automatically.
-	f := flow.SetReceiver(uint8(inport))
+	f, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SetSender(f, uint8(outport))
+	err = flow.SetSender(f, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

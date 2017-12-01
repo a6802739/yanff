@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -90,7 +91,10 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-19",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	stabilityCommon.InitCommonState(*configFile, *target)
 	fixMACAddrs = stabilityCommon.ModifyPacket[outport].(func(*packet.Packet, flow.UserContext))
 
@@ -98,21 +102,50 @@ func main() {
 	testDoneEvent = sync.NewCond(&m)
 
 	// Create first packet flow
-	outputFlow := flow.SetGenerator(generatePacket, speed, nil)
-	flow.SetSender(outputFlow, uint8(outport))
+	outputFlow, err := flow.SetGenerator(generatePacket, speed, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(outputFlow, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create receiving flows and set a checking function for it
-	inputFlow1 := flow.SetReceiver(uint8(inport1))
-	flow.SetHandler(inputFlow1, checkInputFlow1, nil)
+	inputFlow1, err := flow.SetReceiver(uint8(inport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(inputFlow1, checkInputFlow1, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	inputFlow2 := flow.SetReceiver(uint8(inport2))
-	flow.SetHandler(inputFlow2, checkInputFlow2, nil)
+	inputFlow2, err := flow.SetReceiver(uint8(inport2))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(inputFlow2, checkInputFlow2, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SetStopper(inputFlow1)
-	flow.SetStopper(inputFlow2)
+	err = flow.SetStopper(inputFlow1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(inputFlow2)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start pipeline
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	progStart = time.Now()
 
 	// Wait for enough packets to arrive
@@ -162,10 +195,10 @@ func main() {
 // Function to use in generator
 func generatePacket(pkt *packet.Packet, context flow.UserContext) {
 	if pkt == nil {
-		panic("Failed to create new packet")
+		log.Fatal("Failed to create new packet")
 	}
 	if packet.InitEmptyIPv4UDPPacket(pkt, payloadSize) == false {
-		panic("Failed to init empty packet")
+		log.Fatal("Failed to init empty packet")
 	}
 	ipv4 := pkt.GetIPv4()
 	udp := pkt.GetUDPForIPv4()

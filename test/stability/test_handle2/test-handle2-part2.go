@@ -6,6 +6,8 @@ package main
 
 import (
 	"flag"
+	"log"
+
 	"github.com/intel-go/yanff/flow"
 	"github.com/intel-go/yanff/packet"
 )
@@ -27,22 +29,40 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Get splitting rules from access control file.
-	l3Rules = packet.GetL3ACLFromORIG("test-handle2-l3rules.conf")
+	l3Rules, err = packet.GetL3ACLFromORIG("test-handle2-l3rules.conf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from 0 port
-	flow1 := flow.SetReceiver(uint8(inport))
+	flow1, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Handle packet flow
-	flow.SetHandler(flow1, l3Handler, nil) // ~33% of packets should left in flow1
+	err = flow.SetHandler(flow1, l3Handler, nil) // ~33% of packets should left in flow1
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send each flow to corresponding port. Send queues will be added automatically.
-	flow.SetSender(flow1, uint8(outport))
+	err = flow.SetSender(flow1, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Begin to process packets.
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func l3Handler(pkt *packet.Packet, context flow.UserContext) bool {

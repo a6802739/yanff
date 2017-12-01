@@ -6,10 +6,12 @@ package main
 
 import (
 	"flag"
-	"github.com/intel-go/yanff/flow"
-	"github.com/intel-go/yanff/packet"
+	"log"
 	"os"
 	"sync/atomic"
+
+	"github.com/intel-go/yanff/flow"
+	"github.com/intel-go/yanff/packet"
 )
 
 var totalPackets int64
@@ -33,19 +35,37 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// With generateOne all packets are sent.
-	f1 := flow.SetGenerator(generatePacket, 0, nil)
+	f1, err := flow.SetGenerator(generatePacket, 0, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// With generatePerf sent only multiple of burst-size.
 	// f1 := flow.SetGenerator(generatePacket, 100, nil)
-	f2 := flow.SetPartitioner(f1, 350, 350)
+	f2, err := flow.SetPartitioner(f1, 350, 350)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send all generated packets to the output
-	flow.SetSender(f1, uint8(outport))
-	flow.SetSender(f2, uint8(outport))
+	err = flow.SetSender(f1, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(f2, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func generatePacket(pkt *packet.Packet, context flow.UserContext) {

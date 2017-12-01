@@ -20,6 +20,7 @@ package main
 import (
 	"flag"
 	"hash/fnv"
+	"log"
 	"sync/atomic"
 	"time"
 
@@ -81,15 +82,30 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	inputFlow := flow.SetReceiver(inPort)
-	flow.SetHandler(inputFlow, handle, nil)
-	flow.SetSender(inputFlow, outPort)
+	inputFlow, err := flow.SetReceiver(inPort)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(inputFlow, handle, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(inputFlow, outPort)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Var isDdos is calculated in separate goroutine.
 	go calculateMetrics()
 	// Begin to process packets.
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getPacketHash(pkt *packet.Packet) uint32 {

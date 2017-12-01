@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -86,21 +87,41 @@ func main() {
 	testDoneEvent = sync.NewCond(&m)
 
 	// Create output packet flow
-	outputFlow := flow.SetGenerator(generatePacket, speed, nil)
+	outputFlow, err := flow.SetGenerator(generatePacket, speed, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 	flow.SetSender(outputFlow, uint8(outport))
 
 	// Create receiving flows and set a checking function for it
-	inputFlow1 := flow.SetReceiver(uint8(inport1))
+	inputFlow1, err := flow.SetReceiver(uint8(inport1))
+	if err != nil {
+		log.Fatal(err)
+	}
 	flow.SetHandler(inputFlow1, checkInputFlow1, nil)
 
-	inputFlow2 := flow.SetReceiver(uint8(inport2))
+	inputFlow2, err := flow.SetReceiver(uint8(inport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 	flow.SetHandler(inputFlow2, checkInputFlow2, nil)
 
-	flow.SetStopper(inputFlow1)
-	flow.SetStopper(inputFlow2)
+	err = flow.SetStopper(inputFlow1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(inputFlow2)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start pipeline
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	progStart = time.Now()
 
 	// Wait for enough packets to arrive
@@ -141,10 +162,10 @@ func main() {
 // Generate packets
 func generatePacket(pkt *packet.Packet, context flow.UserContext) {
 	if pkt == nil {
-		panic("Failed to create new packet")
+		log.Fatal("Failed to create new packet")
 	}
 	if packet.InitEmptyIPv4UDPPacket(pkt, payloadSize) == false {
-		panic("Failed to init empty packet")
+		log.Fatal("Failed to init empty packet")
 	}
 	// We do not consider the start time of the system in this test
 	if time.Since(progStart) < T {

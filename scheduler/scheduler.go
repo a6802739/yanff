@@ -5,10 +5,11 @@
 package scheduler
 
 import (
-	"github.com/intel-go/yanff/common"
-	"github.com/intel-go/yanff/low"
 	"runtime"
 	"time"
+
+	"github.com/intel-go/yanff/common"
+	"github.com/intel-go/yanff/low"
 )
 
 // TODO: 1 is a delta of speeds. This delta should be
@@ -154,13 +155,19 @@ func NewScheduler(cpus []uint, schedulerOff bool, schedulerOffRemove bool,
 }
 
 // SystemStart starts whole system. Is used inside flow package
-func (scheduler *Scheduler) SystemStart() {
-	index := scheduler.getCoreIndex(true)
+func (scheduler *Scheduler) SystemStart() error {
+	index, err := scheduler.getCoreIndex(true)
+	if err != nil {
+		return err
+	}
 	core := scheduler.cores[index].id
 	common.LogDebug(common.Initialization, "Start SCHEDULER at", core, "core")
 	low.SetAffinity(uint8(core))
 	if scheduler.stopDedicatedCore {
-		index = scheduler.getCoreIndex(true)
+		index, err = scheduler.getCoreIndex(true)
+		if err != nil {
+			return err
+		}
 		core := scheduler.cores[index].id
 		common.LogDebug(common.Initialization, "Start STOP at", core, "core")
 	} else {
@@ -172,7 +179,10 @@ func (scheduler *Scheduler) SystemStart() {
 	}()
 	for i := range scheduler.UnClonable {
 		ff := scheduler.UnClonable[i]
-		index := scheduler.getCoreIndex(true)
+		index, err := scheduler.getCoreIndex(true)
+		if err != nil {
+			return err
+		}
 		core := scheduler.cores[index].id
 		common.LogDebug(common.Initialization, "Start unclonable FlowFunction", ff.name, ff.identifier, "at", core, "core")
 		go func() {
@@ -180,17 +190,27 @@ func (scheduler *Scheduler) SystemStart() {
 		}()
 	}
 	for i := range scheduler.Clonable {
-		scheduler.startClonable(scheduler.Clonable[i])
+		err := scheduler.startClonable(scheduler.Clonable[i])
+		if err != nil {
+			return err
+		}
 	}
 	for i := range scheduler.Generate {
-		scheduler.startClonable(scheduler.Generate[i])
+		err := scheduler.startClonable(scheduler.Generate[i])
+		if err != nil {
+			return err
+		}
 	}
 	// We need this to get a chance to all started goroutines to log their warnings.
 	time.Sleep(time.Millisecond)
+	return nil
 }
 
-func (scheduler *Scheduler) startClonable(ff *FlowFunction) {
-	index := scheduler.getCoreIndex(true)
+func (scheduler *Scheduler) startClonable(ff *FlowFunction) error {
+	index, err := scheduler.getCoreIndex(true)
+	if err != nil {
+		return err
+	}
 	core := scheduler.cores[index].id
 	common.LogDebug(common.Initialization, "Start clonable FlowFunction", ff.name, ff.identifier, "at", core, "core")
 	go func() {
@@ -203,6 +223,7 @@ func (scheduler *Scheduler) startClonable(ff *FlowFunction) {
 			ff.cloneFunction(ff.Parameters, ff.channel, ff.report, nil)
 		}
 	}()
+	return nil
 }
 
 // Schedule - main execution. Is used inside flow package
@@ -322,7 +343,10 @@ func (scheduler *Scheduler) Schedule(schedTime uint) {
 }
 
 func (scheduler *Scheduler) startClone(ff *FlowFunction) bool {
-	index := scheduler.getCoreIndex(false)
+	index, err := scheduler.getCoreIndex(false)
+	if err != nil {
+		common.LogError(common.Debug, err)
+	}
 	if index != -1 {
 		core := scheduler.cores[index].id
 		quit := make(chan int)
@@ -402,16 +426,18 @@ func (scheduler *Scheduler) setCoreByIndex(i int) {
 	scheduler.usedCores--
 }
 
-func (scheduler *Scheduler) getCoreIndex(startStage bool) int {
+func (scheduler *Scheduler) getCoreIndex(startStage bool) (int, error) {
 	for i := range scheduler.cores {
 		if scheduler.cores[i].isfree == true {
 			scheduler.cores[i].isfree = false
 			scheduler.usedCores++
-			return i
+			return i, nil
 		}
 	}
 	if startStage == true {
-		common.LogError(common.Initialization, "Requested number of cores isn't enough. System needs at least one core per each Set function (except Merger and Stopper) plus one additional core.")
+		msg := "Requested number of cores isn't enough. System needs at least one core per each Set function (except Merger and Stopper) plus one additional core."
+		common.LogErrorNoExit(common.Initialization, msg)
+		return -1, common.NFError{Code: common.CodeNotEnoughCores, Message: msg}
 	}
-	return -1
+	return -1, common.NFError{Code: common.CodeNotFound, Message: "Core was not found in scheduler cores"}
 }

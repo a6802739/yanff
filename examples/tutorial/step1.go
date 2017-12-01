@@ -1,15 +1,22 @@
 package main
 
 import (
+	"log"
+
 	"github.com/intel-go/yanff/flow"
 )
 
 func main() {
 	// Init YANFF system
 	config := flow.Config{}
-	flow.SystemInit(&config)
-
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	initCommonState()
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

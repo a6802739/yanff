@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/intel-go/yanff/flow"
@@ -29,18 +30,33 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-9",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from zero port. One queue will be added automatically.
-	f1 := flow.SetReceiver(uint8(inport))
+	f1, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var pdp pcapdumperParameters
-	flow.SetHandler(f1, pcapdumper, &pdp)
+	err = flow.SetHandler(f1, pcapdumper, &pdp)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send packets to control speed. One queue will be added automatically.
-	flow.SetSender(f1, uint8(outport))
+	err = flow.SetSender(f1, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type pcapdumperParameters struct {
@@ -55,7 +71,10 @@ func (pd pcapdumperParameters) Copy() interface{} {
 		os.Exit(0)
 	}
 	cloneNumber++
-	packet.WritePcapGlobalHdr(f)
+	err = packet.WritePcapGlobalHdr(f)
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdp := pcapdumperParameters{f: f}
 	return pdp
 }
@@ -66,5 +85,8 @@ func (pd pcapdumperParameters) Delete() {
 
 func pcapdumper(currentPacket *packet.Packet, context flow.UserContext) {
 	pd := context.(pcapdumperParameters)
-	currentPacket.WritePcapOnePacket(pd.f)
+	err := currentPacket.WritePcapOnePacket(pd.f)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

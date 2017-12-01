@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"sync"
@@ -87,7 +88,10 @@ func main() {
 		CPUList:      "0-15",
 		HWTXChecksum: hwol,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if !useIPv4 && !useIPv6 {
 		println("No L3 IP mode selected. Enabling IPv4 by default")
@@ -136,17 +140,37 @@ func main() {
 	// High performance generator (enabled if speed != 0) is not used here, as it
 	// can send fully only number of packets N which is multiple of burst size (default 32),
 	// otherwise last N%burstSize packets are not sent, and cannot send N less than burstSize.
-	firstFlow := flow.SetGenerator(generatePacket, 0, nil)
+	firstFlow, err := flow.SetGenerator(generatePacket, 0, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Send all generated packets to the output
-	flow.SetSender(firstFlow, uint8(outport))
+	err = flow.SetSender(firstFlow, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create receiving flow and set a checking function for it
-	secondFlow := flow.SetReceiver(uint8(inport))
-	flow.SetHandler(secondFlow, checkPackets, nil)
-	flow.SetStopper(secondFlow)
+	secondFlow, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(secondFlow, checkPackets, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(secondFlow)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start pipeline
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// Wait for enough packets to arrive
 	testDoneEvent.L.Lock()

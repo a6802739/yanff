@@ -4,9 +4,13 @@
 
 package main
 
-import "github.com/intel-go/yanff/flow"
-import "github.com/intel-go/yanff/packet"
-import "flag"
+import (
+	"flag"
+	"log"
+
+	"github.com/intel-go/yanff/flow"
+	"github.com/intel-go/yanff/packet"
+)
 
 // L3ACL.json assumes that pktgen is configured the following way
 //Pktgen> src.ip min 0/1 111.2.0.0
@@ -36,33 +40,69 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start regular updating forwarding rules
 	switch mode {
 	case "json":
-		l3Rules = packet.GetL3ACLFromJSON("forwardingTestL3_ACL.json")
+		l3Rules, err = packet.GetL3ACLFromJSON("forwardingTestL3_ACL.json")
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "orig":
-		l3Rules = packet.GetL3ACLFromORIG("forwardingTestL3_ACL.orig")
+		l3Rules, err = packet.GetL3ACLFromORIG("forwardingTestL3_ACL.orig")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// Receive packets from zero port. One queue will be added automatically.
-	firstFlow0 := flow.SetReceiver(0)
-	firstFlow1 := flow.SetReceiver(1)
+	firstFlow0, err := flow.SetReceiver(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	firstFlow1, err := flow.SetReceiver(1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Merge flows with TCP and UDP packets
-	firstFlow := flow.SetMerger(firstFlow0, firstFlow1)
+	firstFlow, err := flow.SetMerger(firstFlow0, firstFlow1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Split packet flow based on ACL
-	Flows := flow.SetSplitter(firstFlow, l3Splitter, 4, nil)
+	Flows, err := flow.SetSplitter(firstFlow, l3Splitter, 4, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send each flow to corresponding port
-	flow.SetSender(Flows[0], 0) // It is test. So we don't stop "0" packets, we count them as others.
-	flow.SetSender(Flows[1], 1)
-	flow.SetSender(Flows[2], 2)
-	flow.SetSender(Flows[3], 3)
+	err = flow.SetSender(Flows[0], 0) // It is test. So we don't stop "0" packets, we count them as others.
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(Flows[1], 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(Flows[2], 2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(Flows[3], 3)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func l3Splitter(currentPacket *packet.Packet, context flow.UserContext) uint {

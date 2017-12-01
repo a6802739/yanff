@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/intel-go/yanff/flow"
 	"github.com/intel-go/yanff/packet"
@@ -33,20 +34,41 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	stabilityCommon.InitCommonState(*configFile, *target)
 	fixMACAddrs = stabilityCommon.ModifyPacket[outport].(func(*packet.Packet, flow.UserContext))
 
 	// Receive packets from 0 and 1 ports
-	inputFlow1 := flow.SetReceiver(uint8(inport1))
-	inputFlow2 := flow.SetReceiver(uint8(inport2))
+	inputFlow1, err := flow.SetReceiver(uint8(inport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	inputFlow2, err := flow.SetReceiver(uint8(inport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	outputFlow := flow.SetMerger(inputFlow1, inputFlow2)
-	flow.SetHandler(outputFlow, fixPackets, nil)
-	flow.SetSender(outputFlow, uint8(outport))
+	outputFlow, err := flow.SetMerger(inputFlow1, inputFlow2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(outputFlow, fixPackets, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(outputFlow, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Begin to process packets.
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func fixPackets(pkt *packet.Packet, ctx flow.UserContext) {

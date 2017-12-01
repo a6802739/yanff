@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"github.com/intel-go/yanff/flow"
 )
 
@@ -25,12 +26,24 @@ func main() {
 	config := flow.Config{
 		CPUList: cores,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from 0 port and send to 1 port.
-	flow1 := flow.SetReceiver(uint8(inport))
-	flow.SetSender(flow1, uint8(outport))
+	flow1, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(flow1, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Begin to process packets.
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

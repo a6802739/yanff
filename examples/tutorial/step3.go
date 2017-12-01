@@ -1,19 +1,44 @@
 package main
 
-import "github.com/intel-go/yanff/flow"
+import (
+	"log"
+
+	"github.com/intel-go/yanff/flow"
+)
 
 func main() {
 	config := flow.Config{}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	initCommonState()
 
-	firstFlow := flow.SetReceiver(0)
-	secondFlow := flow.SetPartitioner(firstFlow, 300, 300)
-	flow.SetHandler(firstFlow, modifyPacket[0], nil)
-	flow.SetHandler(secondFlow, modifyPacket[1], nil)
-	flow.SetSender(firstFlow, 0)
-	flow.SetSender(secondFlow, 1)
+	firstFlow, err := flow.SetReceiver(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	secondFlow, err := flow.SetPartitioner(firstFlow, 300, 300)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(firstFlow, modifyPacket[0], nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(secondFlow, modifyPacket[1], nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(firstFlow, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(secondFlow, 1)
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

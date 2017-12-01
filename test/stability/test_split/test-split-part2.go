@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/intel-go/yanff/flow"
 	"github.com/intel-go/yanff/packet"
@@ -37,32 +38,62 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	stabilityCommon.InitCommonState(*configFile, *target)
 	fixMACAddrs1 = stabilityCommon.ModifyPacket[outport1].(func(*packet.Packet, flow.UserContext))
 	fixMACAddrs2 = stabilityCommon.ModifyPacket[outport2].(func(*packet.Packet, flow.UserContext))
 
 	// Get splitting rules from access control file.
-	l3Rules = packet.GetL3ACLFromORIG(*filename)
+	l3Rules, err = packet.GetL3ACLFromORIG(*filename)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	inputFlow := flow.SetReceiver(uint8(inport))
+	inputFlow, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Split packet flow based on ACL.
 	flowsNumber := 3
-	outputFlows := flow.SetSplitter(inputFlow, l3Splitter, uint(flowsNumber), nil)
+	outputFlows, err := flow.SetSplitter(inputFlow, l3Splitter, uint(flowsNumber), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// "0" flow is used for dropping packets without sending them.
-	flow.SetStopper(outputFlows[0])
+	err = flow.SetStopper(outputFlows[0])
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SetHandler(outputFlows[1], fixPackets1, nil)
-	flow.SetHandler(outputFlows[2], fixPackets2, nil)
+	err = flow.SetHandler(outputFlows[1], fixPackets1, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(outputFlows[2], fixPackets2, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send each flow to corresponding port. Send queues will be added automatically.
-	flow.SetSender(outputFlows[1], uint8(outport1))
-	flow.SetSender(outputFlows[2], uint8(outport2))
+	err = flow.SetSender(outputFlows[1], uint8(outport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(outputFlows[2], uint8(outport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Begin to process packets.
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func l3Splitter(currentPacket *packet.Packet, context flow.UserContext) uint {

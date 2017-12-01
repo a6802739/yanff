@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 
 	"github.com/intel-go/yanff/flow"
 	"github.com/intel-go/yanff/packet"
@@ -30,15 +31,30 @@ func main() {
 		CPUList:      "0-15",
 		HWTXChecksum: hwol,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from zero port. Receive queue will be added automatically.
-	inputFlow := flow.SetReceiver(uint8(inport))
-	flow.SetHandler(inputFlow, fixPacket, nil)
-	flow.SetSender(inputFlow, uint8(outport))
+	inputFlow, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(inputFlow, fixPacket, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(inputFlow, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Begin to process packets.
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func fixPacket(pkt *packet.Packet, context flow.UserContext) {

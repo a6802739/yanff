@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -64,7 +65,10 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	stabilityCommon.InitCommonState(*configFile, *target)
 	fixMACAddrs = stabilityCommon.ModifyPacket[outport].(func(*packet.Packet, flow.UserContext))
@@ -72,18 +76,38 @@ func main() {
 	var m sync.Mutex
 	testDoneEvent = sync.NewCond(&m)
 
-	firstFlow := flow.SetGenerator(generatePacket, speed, nil)
+	firstFlow, err := flow.SetGenerator(generatePacket, speed, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send all generated packets to the output
-	flow.SetSender(firstFlow, uint8(outport))
+	err = flow.SetSender(firstFlow, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create receiving flow and set a checking function for it
-	secondFlow := flow.SetReceiver(uint8(inport))
-	flow.SetHandler(secondFlow, checkPackets, nil)
-	flow.SetStopper(secondFlow)
+	secondFlow, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(secondFlow, checkPackets, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(secondFlow)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start pipeline
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	progStart = time.Now()
 
 	// Wait for enough packets to arrive

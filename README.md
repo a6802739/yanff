@@ -28,25 +28,46 @@ func main() {
 	config := flow.Config{
 		CPUCoresNumber: 8,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Get filtering rules from access control file.
-	L3Rules = packet.GetL3ACLFromORIG("Firewall.conf")
+	L3Rules, err = packet.GetL3ACLFromORIG("Firewall.conf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from zero port. Receive queue will be added automatically.
-	inputFlow := flow.SetReceiver(0)
+	inputFlow, err := flow.SetReceiver(0)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Separate packet flow based on ACL.
-	rejectFlow := flow.SetSeparator(inputFlow, L3Separator, nil)
+	rejectFlow, err := flow.SetSeparator(inputFlow, L3Separator, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Drop rejected packets.
-	flow.SetStopper(rejectFlow)
+	err = flow.SetStopper(rejectFlow)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send accepted packets to first port. Send queue will be added automatically.
-	flow.SetSender(inputFlow, 1)
+	err = flow.SetSender(inputFlow, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Begin to process packets.
-	flow.SystemStart()
+		err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // User defined function for separating packets

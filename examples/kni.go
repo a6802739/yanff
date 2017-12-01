@@ -8,7 +8,11 @@
 
 package main
 
-import "github.com/intel-go/yanff/flow"
+import (
+	"log"
+
+	"github.com/intel-go/yanff/flow"
+)
 
 func main() {
 	config := flow.Config{
@@ -17,15 +21,33 @@ func main() {
 		CPUList: "0-7",
 	}
 
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// (port of device, core (not from YANFF set) which will handle device, name of device)
 	kni := flow.CreateKniDevice(1, 20, "myKNI")
 
-	fromEthFlow := flow.SetReceiver(0)
-	flow.SetSender(fromEthFlow, kni)
+	fromEthFlow, err := flow.SetReceiver(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(fromEthFlow, kni)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	fromKNIFlow := flow.SetReceiver(kni)
-	flow.SetSender(fromKNIFlow, 1)
+	fromKNIFlow, err := flow.SetReceiver(kni)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(fromKNIFlow, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -4,10 +4,13 @@
 
 package main
 
-import "github.com/intel-go/yanff/flow"
-import "github.com/intel-go/yanff/packet"
+import (
+	"flag"
+	"log"
 
-import "flag"
+	"github.com/intel-go/yanff/flow"
+	"github.com/intel-go/yanff/packet"
+)
 
 var (
 	load uint
@@ -35,49 +38,104 @@ func main() {
 		CPUList:          "0-34",
 		DisableScheduler: noscheduler,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var tempFlow *flow.Flow
 	var afterFlow *flow.Flow
 
 	// Receive packets from zero port. One queue will be added automatically.
-	firstFlow0 := flow.SetReceiver(uint8(inport1))
-	firstFlow1 := flow.SetReceiver(uint8(inport2))
+	firstFlow0, err := flow.SetReceiver(uint8(inport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	firstFlow1, err := flow.SetReceiver(uint8(inport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	firstFlow := flow.SetMerger(firstFlow0, firstFlow1)
+	firstFlow, err := flow.SetMerger(firstFlow0, firstFlow1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if mode > 10 {
-		tempFlow = flow.SetPartitioner(firstFlow, 150, 150)
+		tempFlow, err = flow.SetPartitioner(firstFlow, 150, 150)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// Handle second flow via some heavy function
-	flow.SetHandler(firstFlow, heavyFunc, nil)
-	flow.SetHandler(firstFlow, heavyFunc, nil)
+	err = flow.SetHandler(firstFlow, heavyFunc, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(firstFlow, heavyFunc, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if mode%10 > 2 {
-		flow.SetHandler(firstFlow, heavyFunc, nil)
+		err = flow.SetHandler(firstFlow, heavyFunc, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	if mode%10 > 3 {
-		flow.SetHandler(firstFlow, heavyFunc, nil)
+		err = flow.SetHandler(firstFlow, heavyFunc, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	if mode > 10 {
-		flow.SetHandler(tempFlow, heavyFunc, nil)
-		flow.SetHandler(tempFlow, heavyFunc, nil)
+		err = flow.SetHandler(tempFlow, heavyFunc, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = flow.SetHandler(tempFlow, heavyFunc, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 		if mode%10 > 2 {
-			flow.SetHandler(tempFlow, heavyFunc, nil)
+			err = flow.SetHandler(tempFlow, heavyFunc, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 		if mode%10 > 3 {
-			flow.SetHandler(tempFlow, heavyFunc, nil)
+			err = flow.SetHandler(tempFlow, heavyFunc, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
-		afterFlow = flow.SetMerger(firstFlow, tempFlow)
+		afterFlow, err = flow.SetMerger(firstFlow, tempFlow)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
 		afterFlow = firstFlow
 	}
-	secondFlow := flow.SetPartitioner(afterFlow, 150, 150)
+	secondFlow, err := flow.SetPartitioner(afterFlow, 150, 150)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send both flows each one to one port. Queues will be added automatically.
-	flow.SetSender(afterFlow, uint8(outport1))
-	flow.SetSender(secondFlow, uint8(outport2))
+	err = flow.SetSender(afterFlow, uint8(outport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(secondFlow, uint8(outport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func heavyFunc(currentPacket *packet.Packet, context flow.UserContext) {

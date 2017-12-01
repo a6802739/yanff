@@ -4,10 +4,13 @@
 
 package main
 
-import "github.com/intel-go/yanff/flow"
-import "github.com/intel-go/yanff/packet"
+import (
+	"flag"
+	"log"
 
-import "flag"
+	"github.com/intel-go/yanff/flow"
+	"github.com/intel-go/yanff/packet"
+)
 
 var (
 	mode uint
@@ -33,29 +36,63 @@ func main() {
 		CPUList:          "0-14",
 		DisableScheduler: noscheduler,
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from zero port. One queue per receive will be added automatically.
-	firstFlow0 := flow.SetReceiver(uint8(inport1))
-	firstFlow1 := flow.SetReceiver(uint8(inport2))
+	firstFlow0, err := flow.SetReceiver(uint8(inport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	firstFlow1, err := flow.SetReceiver(uint8(inport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	firstFlow := flow.SetMerger(firstFlow0, firstFlow1)
+	firstFlow, err := flow.SetMerger(firstFlow0, firstFlow1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Handle second flow via some heavy function
 	if mode == 0 {
-		flow.SetHandler(firstFlow, heavyFunc0, nil)
+		err = flow.SetHandler(firstFlow, heavyFunc0, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else if mode == 1 {
-		flow.SetHandler(firstFlow, heavyFunc1, nil)
+		err = flow.SetHandler(firstFlow, heavyFunc1, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
-		flow.SetHandler(firstFlow, heavyFunc2, nil)
+		err = flow.SetHandler(firstFlow, heavyFunc2, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// Split for two senders and send
-	secondFlow := flow.SetPartitioner(firstFlow, 150, 150)
-	flow.SetSender(firstFlow, uint8(outport1))
-	flow.SetSender(secondFlow, uint8(outport2))
+	secondFlow, err := flow.SetPartitioner(firstFlow, 150, 150)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SystemStart()
+	err = flow.SetSender(firstFlow, uint8(outport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(secondFlow, uint8(outport2))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func heavyFunc0(currentPacket *packet.Packet, context flow.UserContext) {

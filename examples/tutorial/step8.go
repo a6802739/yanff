@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/intel-go/yanff/flow"
@@ -15,18 +16,44 @@ const flowN = 3
 
 func main() {
 	config := flow.Config{}
-	flow.SystemInit(&config)
-	initCommonState()
-	l3Rules = packet.GetL3ACLFromORIG("rules2.conf")
-	go updateSeparateRules()
-	firstFlow := flow.SetReceiver(0)
-	outputFlows := flow.SetSplitter(firstFlow, mySplitter, flowN, nil)
-	flow.SetStopper(outputFlows[0])
-	for i := 1; i < flowN; i++ {
-		flow.SetHandler(outputFlows[i], modifyPacket[i-1], nil)
-		flow.SetSender(outputFlows[i], uint8(i-1))
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
 	}
-	flow.SystemStart()
+
+	initCommonState()
+
+	l3Rules, err = packet.GetL3ACLFromORIG("rules2.conf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	go updateSeparateRules()
+	firstFlow, err := flow.SetReceiver(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	outputFlows, err := flow.SetSplitter(firstFlow, mySplitter, flowN, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(outputFlows[0])
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i := 1; i < flowN; i++ {
+		err = flow.SetHandler(outputFlows[i], modifyPacket[i-1], nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = flow.SetSender(outputFlows[i], uint8(i-1))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func mySplitter(cur *packet.Packet, ctx flow.UserContext) uint {
@@ -37,6 +64,10 @@ func mySplitter(cur *packet.Packet, ctx flow.UserContext) uint {
 func updateSeparateRules() {
 	for {
 		time.Sleep(time.Second * 5)
-		l3Rules = packet.GetL3ACLFromORIG("rules2.conf")
+		var err error
+		l3Rules, err = packet.GetL3ACLFromORIG("rules2.conf")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

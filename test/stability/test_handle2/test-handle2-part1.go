@@ -6,11 +6,13 @@ package main
 
 import (
 	"flag"
-	"github.com/intel-go/yanff/flow"
-	"github.com/intel-go/yanff/packet"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/intel-go/yanff/flow"
+	"github.com/intel-go/yanff/packet"
 )
 
 // test-handle2-part1: sends packets to 0 port, receives from 0 and 1 ports.
@@ -68,23 +70,46 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var m sync.Mutex
 	testDoneEvent = sync.NewCond(&m)
 
 	// Create first packet flow
-	outputFlow := flow.SetGenerator(generatePacket, 0, nil)
+	outputFlow, err := flow.SetGenerator(generatePacket, 0, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SetSender(outputFlow, uint8(outport))
+	err = flow.SetSender(outputFlow, uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create receiving flows and set a checking function for it
-	inputFlow1 := flow.SetReceiver(uint8(outport))
-	flow.SetHandler(inputFlow1, checkInputFlow, nil)
-	flow.SetStopper(inputFlow1)
+	inputFlow1, err := flow.SetReceiver(uint8(outport))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(inputFlow1, checkInputFlow, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetStopper(inputFlow1)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Start pipeline
-	go flow.SystemStart()
+	go func () {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// Wait for enough packets to arrive
 	testDoneEvent.L.Lock()
@@ -122,10 +147,10 @@ func main() {
 
 func generatePacket(pkt *packet.Packet, context flow.UserContext) {
 	if pkt == nil {
-		panic("Failed to create new packet")
+		log.Fatal("Failed to create new packet")
 	}
 	if packet.InitEmptyIPv4UDPPacket(pkt, payloadSize) == false {
-		panic("Failed to init empty packet")
+		log.Fatal("Failed to init empty packet")
 	}
 	ipv4 := pkt.GetIPv4()
 	udp := pkt.GetUDPForIPv4()

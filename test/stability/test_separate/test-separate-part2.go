@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"log"
 
 	"github.com/intel-go/yanff/flow"
 	"github.com/intel-go/yanff/packet"
@@ -36,29 +37,56 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	stabilityCommon.InitCommonState(*configFile, *target)
 	fixMACAddrs1 = stabilityCommon.ModifyPacket[outport1].(func(*packet.Packet, flow.UserContext))
 	fixMACAddrs2 = stabilityCommon.ModifyPacket[outport2].(func(*packet.Packet, flow.UserContext))
 
 	// Get splitting rules from access control file.
-	l3Rules = packet.GetL3ACLFromORIG("test-separate-l3rules.conf")
+	l3Rules, err = packet.GetL3ACLFromORIG("test-separate-l3rules.conf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Receive packets from 0 port
-	flow1 := flow.SetReceiver(uint8(inport))
+	flow1, err := flow.SetReceiver(uint8(inport))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Separate packet flow based on ACL.
-	flow2 := flow.SetSeparator(flow1, l3Separator, nil) // ~66% of packets should go to flow2, ~33% left in flow1
+	flow2, err := flow.SetSeparator(flow1, l3Separator, nil) // ~66% of packets should go to flow2, ~33% left in flow1
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	flow.SetHandler(flow1, fixPackets1, nil)
-	flow.SetHandler(flow2, fixPackets2, nil)
+	err = flow.SetHandler(flow1, fixPackets1, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetHandler(flow2, fixPackets2, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Send each flow to corresponding port. Send queues will be added automatically.
-	flow.SetSender(flow1, uint8(outport1))
-	flow.SetSender(flow2, uint8(outport2))
+	err = flow.SetSender(flow1, uint8(outport1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SetSender(flow2, uint8(outport2))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Begin to process packets.
-	flow.SystemStart()
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func l3Separator(pkt *packet.Packet, context flow.UserContext) bool {

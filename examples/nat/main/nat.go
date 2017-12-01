@@ -38,13 +38,21 @@ func main() {
 		HWTXChecksum: nat.HWTXChecksum,
 	}
 
-	flow.SystemInit(&yanffconfig)
+	err = flow.SystemInit(&yanffconfig)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize flows and necessary state
 	nat.InitFlows()
 
 	// Start flow scheduler
-	go flow.SystemStart()
+	go func() {
+		err := flow.SystemStart()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// Wait for interrupt
 	sig := <-c

@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/hex"
 	"flag"
+	"log"
 
 	"github.com/intel-go/yanff/flow"
 	"github.com/intel-go/yanff/packet"
@@ -26,18 +27,33 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	flow.SystemInit(&config)
+	err := flow.SystemInit(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create packets with speed at least 1000 packets/s
 	if *enablePacketFromByte == false {
-		firstFlow = flow.SetGenerator(generatePacket, 1000, nil)
+		firstFlow, err = flow.SetGenerator(generatePacket, 1000, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
 		buffer, _ = hex.DecodeString("00112233445501112131415108004500002ebffd00000406747a7f0000018009090504d2162e123456781234569050102000ffe60000")
-		firstFlow = flow.SetGenerator(generatePacketFromByte, 1000, nil)
+		firstFlow, err = flow.SetGenerator(generatePacketFromByte, 1000, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	// Send all generated packets to the output
-	flow.SetSender(firstFlow, 1)
-	flow.SystemStart()
+	err = flow.SetSender(firstFlow, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = flow.SystemStart()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func generatePacket(pkt *packet.Packet, context flow.UserContext) {
