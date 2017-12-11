@@ -82,8 +82,7 @@ func main() {
 	config := flow.Config{
 		CPUList: "0-15",
 	}
-	err := flow.SystemInit(&config)
-	if err != nil {
+	if err := flow.SystemInit(&config); err != nil {
 		log.Fatal(err)
 	}
 
@@ -91,19 +90,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = flow.SetHandler(inputFlow, handle, nil)
-	if err != nil {
+	if err = flow.SetHandler(inputFlow, handle, nil); err != nil {
 		log.Fatal(err)
 	}
-	err = flow.SetSender(inputFlow, outPort)
-	if err != nil {
+	if err = flow.SetSender(inputFlow, outPort); err != nil {
 		log.Fatal(err)
 	}
 	// Var isDdos is calculated in separate goroutine.
 	go calculateMetrics()
 	// Begin to process packets.
-	err = flow.SystemStart()
-	if err != nil {
+	if err = flow.SystemStart(); err != nil {
 		log.Fatal(err)
 	}
 }

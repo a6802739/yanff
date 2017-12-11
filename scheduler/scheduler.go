@@ -347,27 +347,22 @@ func (scheduler *Scheduler) startClone(ff *FlowFunction) bool {
 	if err != nil {
 		common.LogError(common.Debug, err)
 	}
-	if index != -1 {
-		core := scheduler.cores[index].id
-		quit := make(chan int)
-		cp := new(clonePair)
-		cp.channel = quit
-		cp.index = index
-		ff.clone = append(ff.clone, cp)
-		ff.cloneNumber++
-		go func() {
-			low.SetAffinity(uint8(core))
-			if ff.context != nil {
-				ff.cloneFunction(ff.Parameters, quit, ff.report, (ff.context.Copy()).(UserContext))
-			} else {
-				ff.cloneFunction(ff.Parameters, quit, ff.report, nil)
-			}
-		}()
-		return true
-	} else {
-		common.LogWarning(common.Debug, "Can't start new clone for", ff.name, ff.identifier)
-		return false
-	}
+	core := scheduler.cores[index].id
+	quit := make(chan int)
+	cp := new(clonePair)
+	cp.channel = quit
+	cp.index = index
+	ff.clone = append(ff.clone, cp)
+	ff.cloneNumber++
+	go func() {
+		low.SetAffinity(uint8(core))
+		if ff.context != nil {
+			ff.cloneFunction(ff.Parameters, quit, ff.report, (ff.context.Copy()).(UserContext))
+		} else {
+			ff.cloneFunction(ff.Parameters, quit, ff.report, nil)
+		}
+	}()
+	return true
 }
 
 func (scheduler *Scheduler) removeClone(ff *FlowFunction) {
@@ -435,8 +430,7 @@ func (scheduler *Scheduler) getCoreIndex(startStage bool) (int, error) {
 		}
 	}
 	if startStage == true {
-		msg := "Requested number of cores isn't enough. System needs at least one core per each Set function (except Merger and Stopper) plus one additional core."
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "Requested number of cores isn't enough. System needs at least one core per each Set function (except Merger and Stopper) plus one additional core.")
 		return -1, common.NFError{Code: common.CodeNotEnoughCores, Message: msg}
 	}
 	return -1, common.NFError{Code: common.CodeNotFound, Message: "Core was not found in scheduler cores"}

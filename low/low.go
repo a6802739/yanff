@@ -11,7 +11,6 @@ import "C"
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math"
 	"os"
 	"runtime"
@@ -64,9 +63,8 @@ var packetStructSize int
 // SetPacketStructSize sets the size of the packet.
 func SetPacketStructSize(t int) error {
 	if t > C.RTE_PKTMBUF_HEADROOM {
-		msg := fmt.Sprint("Packet structure can't be placed inside mbuf.",
+		msg := common.LogErrorNoExit(common.Initialization, "Packet structure can't be placed inside mbuf.",
 			"Increase CONFIG_RTE_PKTMBUF_HEADROOM in dpdk/config/common_base and rebuild dpdk.")
-		common.LogErrorNoExit(common.Initialization, msg)
 		return common.NFError{Code: common.CodePktMbufHeadRoomTooSmall, Message: msg}
 	}
 	minPacketHeadroom := 64
@@ -481,8 +479,7 @@ func CreatePort(port uint8, receiveQueuesNumber uint16, sendQueuesNumber uint16,
 	}
 	if C.port_init(C.uint8_t(port), C.uint16_t(receiveQueuesNumber), C.uint16_t(sendQueuesNumber),
 		mempool, (*C.struct_ether_addr)(unsafe.Pointer(&(addr[0]))), C._Bool(hwtxchecksum)) != 0 {
-		msg := fmt.Sprint("Cannot init port ", port, "!")
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "Cannot init port ", port, "!")
 		return common.NFError{Code: common.CodeFailToInitPort, Message: msg}
 	}
 	t := hex.Dump(addr)
@@ -513,8 +510,7 @@ func SetAffinity(coreID uint8) {
 func AllocateMbufs(mb []uintptr, mempool *Mempool, n uint) error{
 	err := C.allocateMbufs((*C.struct_rte_mempool)(mempool), (**C.struct_rte_mbuf)(unsafe.Pointer(&mb[0])), C.unsigned(n))
 	if err != 0 {
-		msg := "AllocateMbufs cannot allocate mbuf"
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "AllocateMbufs cannot allocate mbuf")
 		return common.NFError{Code: common.CodeAllocMbufError, Message: msg}
 	}
 	return nil

@@ -40,7 +40,7 @@ func getIPv4TCPTestPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 	InitEmptyIPv4TCPPacket(pkt, payloadSize)
@@ -56,7 +56,7 @@ func getIPv4UDPTestPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 	InitEmptyIPv4UDPPacket(pkt, payloadSize)
@@ -72,7 +72,7 @@ func getIPv4ICMPTestPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 	InitEmptyIPv4ICMPPacket(pkt, payloadSize)
@@ -87,7 +87,7 @@ func getIPv6TCPTestPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 	InitEmptyIPv6TCPPacket(pkt, payloadSize)
@@ -103,7 +103,7 @@ func getIPv6UDPTestPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 	InitEmptyIPv6UDPPacket(pkt, payloadSize)
@@ -118,7 +118,7 @@ func GetPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 	return pkt
@@ -128,7 +128,7 @@ func getIPv6ICMPTestPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 	InitEmptyIPv6ICMPPacket(pkt, payloadSize)
@@ -142,7 +142,7 @@ func getARPRequestTestPacket() *Packet {
 	mb := make([]uintptr, 1)
 	err := low.AllocateMbufs(mb, testMempool, 1)
 	if err != nil {
-		log.Fatal(common.Debug, err)
+		log.Fatal(err)
 	}
 	pkt := ExtractPacket(mb[0])
 

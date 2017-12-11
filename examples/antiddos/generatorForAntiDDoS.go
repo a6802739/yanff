@@ -79,27 +79,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = flow.SetSender(outputFlow, outPort)
-	if err != nil {
+	if err = flow.SetSender(outputFlow, outPort); err != nil {
 		log.Fatal(err)
 	}
 	inputFlow, err := flow.SetReceiver(inPort)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = flow.SetHandler(inputFlow, checkInputFlow, nil)
-	if err != nil {
+	if err = flow.SetHandler(inputFlow, checkInputFlow, nil); err != nil {
 		log.Fatal(err)
 	}
-	err = flow.SetStopper(inputFlow)
-	if err != nil {
+	if err = flow.SetStopper(inputFlow); err != nil {
 		log.Fatal(err)
 	}
 	go randomizeSize()
 	// Start pipeline
 	go func() {
-		err := flow.SystemStart()
-		if err != nil {
+		if err := flow.SystemStart(); err != nil {
 			log.Fatal(err)
 		}
 	}()

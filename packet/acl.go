@@ -30,7 +30,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -76,8 +75,7 @@ func GetL2ACLFromJSON(filename string) (*L2Rules, error) {
 	}
 	err = json.Unmarshal(f, &rawRules)
 	if err != nil {
-		msg := fmt.Sprint("JSON error during rules parsing: ", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "JSON error during rules parsing: ", err)
 		return nil, common.NFError{Code: common.CodeParseRuleJSONErr, Message: msg}
 	}
 	// Parse Rules
@@ -93,8 +91,7 @@ func GetL2ACLFromORIG(filename string) (*L2Rules, error) {
 	// Load Rules
 	file, err := os.Open(filename)
 	if err != nil {
-		msg := fmt.Sprint("File error during rules parsing: ", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "File error during rules parsing: ", err)
 		return nil, common.NFError{Code: common.CodeFileError, Message: msg}
 	}
 	scanner := bufio.NewScanner(file)
@@ -107,16 +104,14 @@ func GetL2ACLFromORIG(filename string) (*L2Rules, error) {
 		if len(lines) == 3 {
 			lines = append(lines, "false")
 		} else if len(lines) != 4 {
-			msg := "Incomplete 3-tuple for rule parsing"
-			common.LogErrorNoExit(common.Debug, msg)
+			msg := common.LogErrorNoExit(common.Debug, "Incomplete 3-tuple for rule parsing")
 			return nil, common.NFError{Code: common.CodeParseRuleError, Message: msg}
 		}
 		rawRules.L2Rules = append(rawRules.L2Rules, rawL2Rule{Source: lines[0],
 			Destination: lines[1], ID: lines[2], Rule: lines[3]})
 	}
 	if err := scanner.Err(); err != nil {
-		msg := fmt.Sprint("File error during rules parsing: ", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "File error during rules parsing: ", err)
 		return nil, common.NFError{Code: common.CodeFileError, Message: msg}
 	}
 	file.Close()
@@ -138,8 +133,7 @@ func GetL3ACLFromJSON(filename string) (*L3Rules, error) {
 	}
 	err = json.Unmarshal(f, &rawRules)
 	if err != nil {
-		msg := fmt.Sprint("JSON error during rules parsing: ", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "JSON error during rules parsing: ", err)
 		return nil, common.NFError{Code: common.CodeParseRuleJSONErr, Message: msg}
 	}
 	// Parse Rules
@@ -150,8 +144,7 @@ func GetL3ACLFromJSON(filename string) (*L3Rules, error) {
 func readFile(filename string) ([]byte, error) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
-		msg := fmt.Sprint("File error during rules parsing: ", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "File error during rules parsing: ", err)
 		return nil, common.NFError{Code: common.CodeFileError, Message: msg}
 	}
 	return file, nil
@@ -167,8 +160,7 @@ func GetL3ACLFromORIG(filename string) (*L3Rules, error) {
 	// Load Rules
 	file, err := os.Open(filename)
 	if err != nil {
-		msg := fmt.Sprint("File error during rules parsing: ", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "File error during rules parsing: ", err)
 		return nil, common.NFError{Code: common.CodeFileError, Message: msg}
 	}
 	scanner := bufio.NewScanner(file)
@@ -181,16 +173,14 @@ func GetL3ACLFromORIG(filename string) (*L3Rules, error) {
 		if len(lines) == 5 {
 			lines = append(lines, "false")
 		} else if len(lines) != 6 {
-			msg := "Incomplete 5-tuple for rule parsing"
-			common.LogErrorNoExit(common.Debug, msg)
+			msg := common.LogErrorNoExit(common.Debug, "Incomplete 5-tuple for rule parsing")
 			return nil, common.NFError{Code: common.CodeParseRuleError, Message: msg}
 		}
 		rawRules.L3Rules = append(rawRules.L3Rules, rawL3Rule{SrcAddr: lines[0], DstAddr: lines[1],
 			ID: lines[2], SrcPort: lines[3], DstPort: lines[4], OutputNumber: lines[5]})
 	}
 	if err := scanner.Err(); err != nil {
-		msg := fmt.Sprint("File error during rules parsing: ", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "File error during rules parsing: ", err)
 		return nil, common.NFError{Code: common.CodeFileError, Message: msg}
 	}
 	file.Close()
@@ -214,8 +204,7 @@ func rawL2Parse(rules *rawL2Rules, jp *L2Rules) error {
 			jp.eth[i].SAddrNotAny = true
 			t, err := net.ParseMAC(jup[i].Source)
 			if err != nil {
-				msg := fmt.Sprint("Incorrect source MAC: ", jup[i].Source)
-				common.LogErrorNoExit(common.Debug, msg)
+				msg := common.LogErrorNoExit(common.Debug, "Incorrect source MAC: ", jup[i].Source)
 				return common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 			}
 			copy(jp.eth[i].SAddr[:], t)
@@ -224,8 +213,7 @@ func rawL2Parse(rules *rawL2Rules, jp *L2Rules) error {
 			jp.eth[i].DAddrNotAny = true
 			t, err := net.ParseMAC(jup[i].Destination)
 			if err != nil {
-				msg := fmt.Sprint("Incorrect destination MAC: ", jup[i].Destination)
-				common.LogErrorNoExit(common.Debug, msg)
+				msg := common.LogErrorNoExit(common.Debug, "Incorrect destination MAC: ", jup[i].Destination)
 				return common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 			}
 			copy(jp.eth[i].DAddr[:], t)
@@ -244,8 +232,7 @@ func rawL2Parse(rules *rawL2Rules, jp *L2Rules) error {
 			jp.eth[i].ID = common.ARPNumber
 			jp.eth[i].IDMask = 0xffff
 		default:
-			msg := fmt.Sprint("Incorrect L3 protocol ID: ", jup[i].ID)
-			common.LogErrorNoExit(common.Debug, msg)
+			msg := common.LogErrorNoExit(common.Debug, "Incorrect L3 protocol ID: ", jup[i].ID)
 			return common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 		}
 	}
@@ -280,13 +267,11 @@ func rawL3Parse(rules *rawL3Rules, jp *L3Rules) error {
 			l4temp.ID = common.ICMPNumber
 			l4temp.IDMask = 0xff
 			if jup[i].SrcPort != "ANY" || jup[i].DstPort != "ANY" {
-				msg := "Incorrect request: for ICMP rule Source port and Destination port should be ANY"
-				common.LogErrorNoExit(common.Debug, msg)
+				msg := common.LogErrorNoExit(common.Debug, "Incorrect request: for ICMP rule Source port and Destination port should be ANY")
 				return common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 			}
 		default:
-			msg := fmt.Sprint("Incorrect L4 protocol ID: ", jup[i].ID)
-			common.LogErrorNoExit(common.Debug, msg)
+			msg := common.LogErrorNoExit(common.Debug, "Incorrect L4 protocol ID: ", jup[i].ID)
 			return common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 		}
 		var err error
@@ -359,8 +344,7 @@ func rawL3Parse(rules *rawL3Rules, jp *L3Rules) error {
 			} else if dstLen == 4 {
 				temp4.DstAddr, temp4.DstMask = parseAddr4(dstAddr)
 			} else if dstLen == 16 {
-				msg := "Incorrect request: IPv4 + IPv6 in one rule"
-				common.LogErrorNoExit(common.Debug, msg)
+				msg := common.LogErrorNoExit(common.Debug, "Incorrect request: IPv4 + IPv6 in one rule")
 				return common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 			}
 			temp4.OutputNumber, err = parseRuleResult(jup[i].OutputNumber)
@@ -374,8 +358,7 @@ func rawL3Parse(rules *rawL3Rules, jp *L3Rules) error {
 			if dstLen == 0 {
 				temp6.DstAddr, temp6.DstMask = parseAddr6(zero6)
 			} else if dstLen == 4 {
-				msg := "Incorrect request: IPv4 + IPv6 in one rule"
-				common.LogErrorNoExit(common.Debug, msg)
+				msg := common.LogErrorNoExit(common.Debug, "Incorrect request: IPv4 + IPv6 in one rule")
 				return common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 			} else if dstLen == 16 {
 				temp6.DstAddr, temp6.DstMask = parseAddr6(dstAddr)
@@ -406,20 +389,17 @@ func parseL4Port(port string) (uint16, uint16, bool, error) {
 	}
 	s := strings.SplitN(port, ":", 2)
 	if len(s) != 2 {
-		msg := fmt.Sprint("Incorrect port: ", port)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "Incorrect port: ", port)
 		return 0, 0, false, common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 	}
 	tMin, errMin := strconv.ParseUint(s[0], 10, 16)
 	tMax, errMax := strconv.ParseUint(s[1], 10, 16)
 	if errMin != nil || errMax != nil {
-		msg := fmt.Sprint("Incorrect request: cannot parse Min and Max port values in ", port)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "Incorrect request: cannot parse Min and Max port values in ", port)
 		return 0, 0, false, common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 	}
 	if tMin > tMax {
-		msg := fmt.Sprint("Incorrect request: minPort > maxPort", port)
-		common.LogErrorNoExit(common.Debug, msg)
+		msg := common.LogErrorNoExit(common.Debug, "Incorrect request: minPort > maxPort", port)
 		return 0, 0, false, common.NFError{Code: common.CodeIncorrectArgInRules, Message: msg}
 	}
 	return uint16(tMin), uint16(tMax), valid, nil
@@ -434,8 +414,7 @@ func parseRuleResult(rule string) (uint, error) {
 	default:
 		port, err := strconv.ParseUint(rule, 10, 32)
 		if err != nil {
-			msg := fmt.Sprint("Incorrect rule: ", rule)
-			common.LogErrorNoExit(common.Debug, msg)
+			msg := common.LogErrorNoExit(common.Debug, "Incorrect rule: ", rule)
 			return 0, common.NFError{Code: common.CodeIncorrectRule, Message: msg}
 		}
 		return uint(port), nil

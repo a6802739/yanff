@@ -6,7 +6,6 @@ package packet
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"time"
 
@@ -49,10 +48,8 @@ func WritePcapGlobalHdr(f io.Writer) error {
 		Snaplen:      65535,
 		Network:      1,
 	}
-	err := binary.Write(f, binary.LittleEndian, &glHdr)
-	if err != nil {
-		msg := fmt.Sprint("WritePcapGlobalHdr:", err)
-		common.LogErrorNoExit(common.Debug, msg)
+	if err := binary.Write(f, binary.LittleEndian, &glHdr); err != nil {
+		common.LogErrorNoExit(common.Debug, "WritePcapGlobalHdr:", err)
 		return err
 	}
 	return nil
@@ -62,12 +59,10 @@ func WritePcapGlobalHdr(f io.Writer) error {
 // Assumes global pcap header is already present in file. Packet timestamps have nanosecond resolution.
 func (pkt *Packet) WritePcapOnePacket(f io.Writer) error {
 	bytes := low.GetRawPacketBytesMbuf(pkt.CMbuf)
-	err := writePcapRecHdr(f, bytes)
-	if err != nil {
+	if err := writePcapRecHdr(f, bytes); err != nil {
 		return err
 	}
-	err = writePacketBytes(f, bytes)
-	return err
+	return writePacketBytes(f, bytes)
 }
 
 func writePcapRecHdr(f io.Writer, pktBytes []byte) error {
@@ -78,18 +73,12 @@ func writePcapRecHdr(f io.Writer, pktBytes []byte) error {
 		InclLen: uint32(len(pktBytes)),
 		OrigLen: uint32(len(pktBytes)),
 	}
-	err := binary.Write(f, binary.LittleEndian, &hdr)
-	if err != nil {
-		return err
-	}
-	return nil
+	return binary.Write(f, binary.LittleEndian, &hdr)
 }
 
 func writePacketBytes(f io.Writer, pktBytes []byte) error {
-	err := binary.Write(f, binary.LittleEndian, pktBytes)
-	if err != nil {
-		msg := fmt.Sprint("WritePcapOnePacket internal error:", err)
-		common.LogErrorNoExit(common.Debug, msg)
+	if err := binary.Write(f, binary.LittleEndian, pktBytes); err != nil {
+		common.LogErrorNoExit(common.Debug, "WritePcapOnePacket internal error:", err)
 		return err
 	}
 	return nil
@@ -97,10 +86,8 @@ func writePacketBytes(f io.Writer, pktBytes []byte) error {
 
 // ReadPcapGlobalHdr read global pcap header into file.
 func ReadPcapGlobalHdr(f io.Reader, glHdr *PcapGlobHdr) error {
-	err := binary.Read(f, binary.LittleEndian, glHdr)
-	if err != nil {
-		msg := fmt.Sprint("ReadPcapGlobalHdr:", err)
-		common.LogErrorNoExit(common.Debug, msg)
+	if err := binary.Read(f, binary.LittleEndian, glHdr); err != nil {
+		common.LogErrorNoExit(common.Debug, "ReadPcapGlobalHdr:", err)
 		return err
 	}
 	return nil
@@ -112,10 +99,8 @@ func readPcapRecHdr(f io.Reader, hdr *PcapRecHdr) error {
 
 func readPacketBytes(f io.Reader, inclLen uint32) ([]byte, error) {
 	pkt := make([]byte, inclLen)
-	err := binary.Read(f, binary.LittleEndian, pkt)
-	if err != nil {
-		msg := fmt.Sprint("ReadPcapOnePacket internal error:", err)
-		common.LogErrorNoExit(common.Debug, msg)
+	if err := binary.Read(f, binary.LittleEndian, pkt); err != nil {
+		common.LogErrorNoExit(common.Debug, "ReadPcapOnePacket internal error:", err)
 		return nil, err
 	}
 	return pkt, nil
@@ -125,18 +110,15 @@ func readPacketBytes(f io.Reader, inclLen uint32) ([]byte, error) {
 // Assumes that global pcap header is already read.
 func (pkt *Packet) ReadPcapOnePacket(f io.Reader) (bool, error) {
 	var hdr PcapRecHdr
-	err := readPcapRecHdr(f, &hdr)
-	if err == io.EOF {
+	if err := readPcapRecHdr(f, &hdr); err == io.EOF {
 		return true, nil
 	} else if err != nil {
-		msg := fmt.Sprint("ReadPcapOnePacket:", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		common.LogErrorNoExit(common.Debug, "ReadPcapOnePacket:", err)
 		return false, err
 	}
 	bytes, err := readPacketBytes(f, hdr.InclLen)
 	if err != nil {
-		msg := fmt.Sprint("readPacketBytes:", err)
-		common.LogErrorNoExit(common.Debug, msg)
+		common.LogErrorNoExit(common.Debug, "readPacketBytes:", err)
 		return false, err
 	}
 	GeneratePacketFromByte(pkt, bytes)

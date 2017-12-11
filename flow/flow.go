@@ -30,7 +30,6 @@
 package flow
 
 import (
-	"fmt"
 	"os"
 	"runtime"
 	"strconv"
@@ -364,8 +363,7 @@ func SystemInit(args *Config) error {
 	if args.CPUList != "" {
 		cpus, err = common.ParseCPUs(args.CPUList, CPUCoresNumber)
 		if err != nil {
-			msg := fmt.Sprintf("Parsing of CPU list:%s", err)
-			common.LogErrorNoExit(common.Initialization, msg)
+			msg := common.LogErrorNoExit(common.Initialization, "Parsing of CPU list:%s", err)
 			return common.NFError{Code: common.CodeParseCPUListFail, Message: msg}
 		}
 	} else {
@@ -530,8 +528,7 @@ func SetReceiver(par interface{}) (OUT *Flow, err error) {
 	var recv *scheduler.FlowFunction
 	if port, t := par.(uint8); t {
 		if port >= uint8(len(createdPorts)) {
-			msg := "Requested receive port exceeds number of ports which can be used by DPDK (bind to DPDK)."
-			common.LogErrorNoExit(common.Initialization, msg)
+			msg := common.LogErrorNoExit(common.Initialization, "Requested receive port exceeds number of ports which can be used by DPDK (bind to DPDK).")
 			return nil, common.NFError{Code: common.CodeReqTooManyPorts, Message: msg}
 		}
 		createdPorts[port].config = autoPort
@@ -542,8 +539,7 @@ func SetReceiver(par interface{}) (OUT *Flow, err error) {
 		// Receive with "-1" queue will be from KNI device
 		recv = makeReceiver(tkni.port, -1, ring)
 	} else {
-		msg := "SetReceiver parameter should be ether number of port or created KNI device"
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "SetReceiver parameter should be ether number of port or created KNI device")
 		return nil, common.NFError{Code: common.CodeBadArgument, Message: msg}
 	}
 	schedState.UnClonable = append(schedState.UnClonable, recv)
@@ -569,8 +565,7 @@ func SetGenerator(generateFunction interface{}, targetSpeed uint64, context User
 		} else if f, t := generateFunction.(func([]*packet.Packet, uint, UserContext)); t {
 			generate = makeGeneratorPerf(ring, nil, VectorGenerateFunction(f), targetSpeed, context)
 		} else {
-			msg := "Function argument of SetGenerator function doesn't match any applicable prototype"
-			common.LogErrorNoExit(common.Initialization, msg)
+			msg := common.LogErrorNoExit(common.Initialization, "Function argument of SetGenerator function doesn't match any applicable prototype")
 			return nil, common.NFError{Code: common.CodeBadArgument, Message: msg}
 		}
 		schedState.Generate = append(schedState.Generate, generate)
@@ -578,8 +573,7 @@ func SetGenerator(generateFunction interface{}, targetSpeed uint64, context User
 		if f, t := generateFunction.(func(*packet.Packet, UserContext)); t {
 			generate = makeGeneratorOne(ring, GenerateFunction(f))
 		} else {
-			msg := "Function argument of SetGenerator function doesn't match any applicable prototype"
-			common.LogErrorNoExit(common.Initialization, msg)
+			msg := common.LogErrorNoExit(common.Initialization, "Function argument of SetGenerator function doesn't match any applicable prototype")
 			return nil, common.NFError{Code: common.CodeBadArgument, Message: msg}
 		}
 		schedState.UnClonable = append(schedState.UnClonable, generate)
@@ -601,8 +595,7 @@ func SetSender(IN *Flow, par interface{}) error {
 	var send *scheduler.FlowFunction
 	if port, t := par.(uint8); t {
 		if port >= uint8(len(createdPorts)) {
-			msg := "Requested send port exceeds number of ports which can be used by DPDK (bind to DPDK)."
-			common.LogErrorNoExit(common.Initialization, msg)
+			msg := common.LogErrorNoExit(common.Initialization, "Requested send port exceeds number of ports which can be used by DPDK (bind to DPDK).")
 			return common.NFError{Code: common.CodeReqTooManyPorts, Message: msg}
 		}
 		createdPorts[port].config = autoPort
@@ -613,8 +606,7 @@ func SetSender(IN *Flow, par interface{}) error {
 		// Send for "-1" queue will be to KNI device
 		send = makeSender(tkni.port, -1, IN.current)
 	} else {
-		msg := "SetSender parameter should be ether number of port or created KNI device"
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "SetSender parameter should be ether number of port or created KNI device")
 		return common.NFError{Code: common.CodeBadArgument, Message: msg}
 	}
 	schedState.UnClonable = append(schedState.UnClonable, send)
@@ -686,8 +678,7 @@ func SetSeparator(IN *Flow, separateFunction interface{}, context UserContext) (
 	} else if f, t := separateFunction.(func([]*packet.Packet, []bool, uint, UserContext)); t {
 		separate = makeSeparator(IN.current, ringTrue, ringFalse, nil, VectorSeparateFunction(f), "vector separator", context)
 	} else {
-		msg := "Function argument of SetSeparator function doesn't match any applicable prototype"
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "Function argument of SetSeparator function doesn't match any applicable prototype")
 		return nil, common.NFError{Code: common.CodeBadArgument, Message: msg}
 	}
 	schedState.Clonable = append(schedState.Clonable, separate)
@@ -756,8 +747,7 @@ func SetHandler(IN *Flow, handleFunction interface{}, context UserContext) error
 	} else if f, t := handleFunction.(func([]*packet.Packet, []bool, uint, UserContext)); t {
 		handle = makeSeparator(IN.current, ring, schedState.StopRing, nil, VectorSeparateFunction(f), "vector handler", context)
 	} else {
-		msg := "Function argument of SetHandler function doesn't match any applicable prototype"
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "Function argument of SetHandler function doesn't match any applicable prototype")
 		return common.NFError{Code: common.CodeBadArgument, Message: msg}
 	}
 	schedState.Clonable = append(schedState.Clonable, handle)
@@ -1432,8 +1422,7 @@ func safeEnqueue(place *low.Ring, data []uintptr, number uint) {
 
 func checkFlow(f *Flow) error {
 	if f.current == nil {
-		msg := "One of the flows is used after it was closed!"
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "One of the flows is used after it was closed!")
 		return common.NFError{Code: common.CodeUseNilFlow, Message: msg}
 	}
 	return nil
@@ -1441,8 +1430,7 @@ func checkFlow(f *Flow) error {
 
 func checkSystem() error {
 	if openFlowsNumber != 0 {
-		msg := "Some flows are left open at the end of configuration!"
-		common.LogErrorNoExit(common.Initialization, msg)
+		msg := common.LogErrorNoExit(common.Initialization, "Some flows are left open at the end of configuration!")
 		return common.NFError{Code: common.CodeOpenedFlowAtTheEnd, Message: msg}
 	}
 	for i := range createdPorts {
@@ -1450,21 +1438,18 @@ func checkSystem() error {
 			continue
 		}
 		if createdPorts[i].rxQueuesNumber == 0 && createdPorts[i].txQueuesNumber == 0 {
-			msg := fmt.Sprint("Port", createdPorts[i].port, "has no send and receive queues. It is an error in DPDK.")
-			common.LogErrorNoExit(common.Initialization, msg)
+			msg := common.LogErrorNoExit(common.Initialization, "Port", createdPorts[i].port, "has no send and receive queues. It is an error in DPDK.")
 			return common.NFError{Code: common.CodePortHasNoQueues, Message: msg}
 		}
 		for j := range createdPorts[i].rxQueues {
 			if createdPorts[i].rxQueues[j] != true {
-				msg := fmt.Sprint("Port", createdPorts[i].port, "doesn't use all receive queues, packets can be missed due to RSS!")
-				common.LogErrorNoExit(common.Initialization, msg)
+				msg := common.LogErrorNoExit(common.Initialization, "Port", createdPorts[i].port, "doesn't use all receive queues, packets can be missed due to RSS!")
 				return common.NFError{Code: common.CodeNotAllQueuesUsed, Message: msg}
 			}
 		}
 		for j := range createdPorts[i].txQueues {
 			if createdPorts[i].txQueues[j] != true {
-				msg := fmt.Sprint("Port", createdPorts[i].port, "has unused send queue. Performance can be lower than it is expected!")
-				common.LogErrorNoExit(common.Initialization, msg)
+				msg := common.LogErrorNoExit(common.Initialization, "Port", createdPorts[i].port, "has unused send queue. Performance can be lower than it is expected!")
 				return common.NFError{Code: common.CodeNotAllQueuesUsed, Message: msg}
 			}
 		}

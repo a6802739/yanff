@@ -99,8 +99,7 @@ type ErrorCode int
 
 // constants with error codes
 const (
-	CodeOk ErrorCode = iota
-	CodeFail
+	CodeFail ErrorCode = iota + 1
 	CodeParseCPUListFail
 	CodeReqTooManyPorts
 	CodeBadArgument
@@ -114,7 +113,6 @@ const (
 	CodeParseRuleError
 	CodeIncorrectArgInRules
 	CodeIncorrectRule
-	CodePcapWriterFail
 	CodeAllocMbufError
 	CodePktMbufHeadRoomTooSmall
 	CodeNotEnoughCores
@@ -129,7 +127,7 @@ type NFError struct {
 
 // Error method to implement error interface
 func (err NFError) Error() string {
-	return fmt.Sprintf("failed with message '%s' and code '%d'", err.Message, err.Code)
+	return fmt.Sprintf("%s (%d)", err.Message, err.Code)
 }
 
 var currentLogType = No | Initialization | Debug
@@ -144,11 +142,13 @@ func LogError(logType LogType, v ...interface{}) {
 }
 
 // LogErrorNoExit internal, used in all packages
-func LogErrorNoExit(logType LogType, v ...interface{}) {
+func LogErrorNoExit(logType LogType, v ...interface{}) string {
 	if logType&currentLogType != 0 {
 		t := fmt.Sprintln(v...)
 		log.Print("ERROR: ", t)
+		return t
 	}
+	return ""
 }
 
 // LogWarning internal, used in all packages
